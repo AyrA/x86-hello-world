@@ -1,6 +1,16 @@
 ;This is where BIOS loads our code in memory
 org 7c00h
+
+;We need to clear some registers for real hardware
+;QEMU has this already done, but some real PCs don't.
+;You can only move data from a register to ds and es.
 init:
+        xor ax, ax
+        mov ds, ax
+        mov es, ax
+
+;Initialize required registers for string printing
+setstring:
         ;First character of message
         mov si,text
         ;BIOS call to putchar()
@@ -19,7 +29,7 @@ print:
         int 10h
         jmp print
 
-;End execution. We could also jump to "init" again for a loop
+;End execution. We could also jump to "setstring" again for a loop
 done:
         hlt
 
@@ -28,9 +38,10 @@ text:
         db "Hello, World!",13,10,0
 
 ;Add magic number to mark this as bootable
-boot:
+bootsect:
         ;Write zeros until binary is 510 bytes
         ;The formula subtracts space already in use by the code.
-        db (init+510-boot) dup 0
+        ;It also takes the "org" at the beginning into account.
+        db (init+510-bootsect) dup 0
         ;Write 55,AA to mark as bootable and be exactly 512 bytes.
         db 55h,0AAh
